@@ -348,6 +348,16 @@ npm run dev
 
 Para cada cliente.
 
+> **`Consideraciones sobre las salas creadas:`**
+
+En un servidor Reverb (y en Pusher en general) los canales no se "crean" de antemano en la configuración; simplemente existen en memoria mientras tienen al menos un suscriptor. Por tanto:
+- Cuando levantas Reverb, no existe ningún canal game.* todavía, solo el servidor escuchando conexiones WebSocket.
+- El primer cliente que haga pusher.subscribe('game.123') (o game.1234) es quien efectivamente hace que Reverb registre ese canal en memoria y empiece a asociarle suscriptores.
+- Si otro cliente se conecta después a la misma sala (game.123), simplemente se añade como suscriptor al canal ya existente; no se crea uno nuevo.
+- Si el canal se queda sin suscriptores (todos se desconectan), Reverb lo elimina de memoria. Si luego llega un cliente nuevo y vuelve a suscribirse a game.123, se "recrea" desde cero (aunque para el cliente es transparente, es solo un subscribe normal).
+Es decir: el id de sala (123, 1234, etc.) no tiene que existir en ningún sitio del backend de antemano — simplemente es un nombre de canal dinámico. El único requisito real para canales privados/presence sería tener una entrada en channels.php que autorice ese patrón (cosa que aquí no aplica porque es público).
+Una matización importante: en este ejemplo el backend (evento message.sent presumiblemente) hace broadcast()->toOthers() o similar hacia game.{gameId} sin que el canal tenga que existir previamente en el servidor — el evento simplemente se publica a ese nombre de canal; si no hay suscriptores, el mensaje se pierde (nadie lo recibe), pero no da error.
+
 Un ejemplo de ejecución:
 
 ![image.png](imagenes_apuntes/image.png)
